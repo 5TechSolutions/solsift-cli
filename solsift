@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# SolSift - Smart Contract Audit Command
+# Usage: ./solsift <path> [options]
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Python executable
+PYTHON="${PYTHON:-python3.11}"
+
+# Run the CLI
+exec "$PYTHON" "$SCRIPT_DIR/cli.py" "$@"
