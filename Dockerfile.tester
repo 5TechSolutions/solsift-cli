@@ -14,16 +14,17 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only runtime files needed by CLI
+# Copy only tester runtime files
 COPY cli.py ./cli.py
-COPY solsift ./solsift
+COPY test_contracts/app ./test_contracts/app
 
-# Make CLI executable
-RUN chmod +x cli.py solsift
+# Ensure executables are runnable
+RUN chmod +x cli.py test_contracts/app/test_smart_contracts.py
 
-# Set API_BASE_URL - user can override with -e API_BASE_URL=...
+# Tester runtime config
 ENV API_BASE_URL="http://api:8000"
+ENV SOLSIFT_BATCH_IN_CONTAINER="1"
 
-# Default command
-ENTRYPOINT ["python3.14", "cli.py"]
+# Batch tester image entrypoint
+ENTRYPOINT ["python3.14", "test_contracts/app/test_smart_contracts.py"]
 CMD ["--help"]

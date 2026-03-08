@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Python executable
-PYTHON="${PYTHON:-python3.11}"
+PYTHON="${PYTHON:-python3.14}"
 
 # Run the CLI
 exec "$PYTHON" "$SCRIPT_DIR/cli.py" "$@"

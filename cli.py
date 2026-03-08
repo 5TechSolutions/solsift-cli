@@ -1,7 +1,7 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3.14
 """
 SolSift CLI - Command-line interface for smart contract auditing
-Usage: python3.11 cli.py <path-to-file-or-folder> [options]
+Usage: python3.14 cli.py <path-to-file-or-folder> [options]
 """
 
 import argparse
@@ -153,7 +153,7 @@ def print_summary(results: List[Dict]) -> None:
     total_info = sum(r["info"] for r in results)
     total_vulns = sum(r["total"] for r in results)
 
-    print(f"📊 OVERALL STATISTICS")
+    print("📊 OVERALL STATISTICS")
     print(f"{'─' * 80}")
     print(f"  Total Files Analyzed:     {len(results)}")
     print(f"  Total Vulnerabilities:    {total_vulns}")
@@ -163,7 +163,7 @@ def print_summary(results: List[Dict]) -> None:
     print(f"    🟢 Low:                 {total_low}")
     print(f"    🔵 Info:                {total_info}\n")
 
-    print(f"📁 DETAILED RESULTS")
+    print("📁 DETAILED RESULTS")
     print(f"{'─' * 80}")
 
     for result in results:
@@ -186,7 +186,7 @@ def print_summary(results: List[Dict]) -> None:
         print(")")
 
         if result["vulnerabilities"]:
-            print(f"\n   Vulnerabilities:")
+            print("\n   Vulnerabilities:")
             for vuln in result["vulnerabilities"]:
                 severity_icon = {
                     "critical": "🔴",
@@ -212,9 +212,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3.11 cli.py ./contracts/MyContract.sol
-  python3.11 cli.py ./contracts --output json
-  python3.11 cli.py ./contracts --tools slither,mythril
+  python3.14 cli.py ./contracts/MyContract.sol
+  python3.14 cli.py ./contracts --output json
+  python3.14 cli.py ./contracts --tools slither,mythril
         """,
     )
 
@@ -249,7 +249,7 @@ Examples:
             for f in sol_files:
                 print(f"   • {f}")
             print(f"\n🔧 Using tools: {', '.join(tools)}")
-            print(f"⏳ Starting analysis...\n")
+            print("⏳ Starting analysis...\n")
 
         # Process each file
         results = []
