@@ -140,6 +140,16 @@ def format_results(job_id: str, file_path: str) -> Dict:
         }
 
 
+def parse_tools_argument(tools_arg: str) -> List[str]:
+    """Parse and normalize tools argument into a unique ordered list"""
+    parsed_tools = []
+    for tool_name in tools_arg.split(","):
+        normalized = tool_name.strip().lower()
+        if normalized and normalized not in parsed_tools:
+            parsed_tools.append(normalized)
+    return parsed_tools
+
+
 def print_summary(results: List[Dict]) -> None:
     """Print summary of audit results"""
     print("\n" + "=" * 80)
@@ -242,7 +252,10 @@ Examples:
     try:
         # Find all Solidity files
         sol_files = find_solidity_files(args.path)
-        tools = [t.strip() for t in args.tools.split(",")]
+        tools = parse_tools_argument(args.tools)
+
+        if not tools:
+            raise ValueError("No valid tools provided. Use --tools, e.g. slither,mythril")
 
         if args.verbose:
             print(f"\n📄 Found {len(sol_files)} Solidity file(s)")
@@ -265,7 +278,7 @@ Examples:
                 # Create audit job via API
                 response = requests.post(
                     f"{API_BASE_URL}/api/v1/audit/submit",
-                    json={"contract_code": code},
+                    json={"contract_code": code, "tools": tools},
                     timeout=10,
                 )
 

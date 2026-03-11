@@ -49,9 +49,9 @@ def summarize_found(
         }
         normalized.append(record)
 
-        if severity != "info":
-            found_count += 1
-            detected_by_tools.update(tools)
+        # Count every reported vulnerability, including "info".
+        found_count += 1
+        detected_by_tools.update(tools)
 
     return found_count > 0, normalized, found_count, sorted(detected_by_tools)
 

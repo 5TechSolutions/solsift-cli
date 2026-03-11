@@ -118,3 +118,5 @@ If your Dockerized CLI must join a specific network, set `DOCKER_NETWORK`, e.g.:
 `DOCKER_NETWORK=solsift-api_solsift-network`
 
 Ensure the API service is running before using the CLI.
+
+`-t/--tools` is forwarded to API as `tools` in submit payload, so per-run tool selection overrides API `.env` defaults.
