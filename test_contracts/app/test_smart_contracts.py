@@ -14,6 +14,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from smart_audit.args import parse_args
 from smart_audit.output import build_output_path, write_output
 from smart_audit.results import build_summary
@@ -24,10 +25,11 @@ from smart_audit.targeting import collect_targets, select_targets
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULT_FILE_PREFIX = "audit_results"
 CLI_SCRIPT = Path(__file__).resolve().parents[2] / "cli.py"
+DEFAULT_CLI_TOOLS = "slither,mythril"
 
 
 def print_console_summary(
-    summary: dict[str, int],
+    summary: dict[str, Any],
     run_duration_seconds: float,
     output_path: Path,
     run_mode: str,
@@ -36,6 +38,25 @@ def print_console_summary(
     workers: int,
     count_requested: int | None,
 ) -> None:
+    def print_classifier_section(title: str, classifier_data: dict[str, dict[str, Any]]) -> None:
+        if not classifier_data:
+            return
+
+        print(f"\n{title}:")
+        for name, stats in classifier_data.items():
+            evaluated = stats.get("evaluated_files", 0)
+            detected = stats.get("detected_vulnerable", 0)
+            correct = stats.get("correct_predictions", 0)
+            tp = stats.get("true_positive", 0)
+            tn = stats.get("true_negative", 0)
+            fp = stats.get("false_positive", 0)
+            fn = stats.get("false_negative", 0)
+            acc = stats.get("accuracy_pct", 0.0)
+            print(
+                f"- {name}: detected={detected}/{evaluated}, correct={correct}/{evaluated}, "
+                f"TP/TN/FP/FN={tp}/{tn}/{fp}/{fn}, acc={acc:.2f}%"
+            )
+
     print("\n=== Run Summary ===")
     print(f"Duration: {run_duration_seconds:.2f}s")
     print(f"Run mode: {run_mode}")
@@ -52,6 +73,14 @@ def print_console_summary(
         f"{summary.get('true_negative', 0)}/"
         f"{summary.get('false_positive', 0)}/"
         f"{summary.get('false_negative', 0)}"
+    )
+    print_classifier_section(
+        title="Per-tool performance",
+        classifier_data=summary.get("by_tool", {}),
+    )
+    print_classifier_section(
+        title="Combination performance",
+        classifier_data=summary.get("by_tool_combination", {}),
     )
     print(f"Saved results to {output_path}")
 
@@ -109,16 +138,17 @@ def main() -> None:
         if args.workers <= 0:
             raise ValueError("--workers must be > 0")
 
+        effective_tools = args.tools.strip() if args.tools and args.tools.strip() else DEFAULT_CLI_TOOLS
         entries = scan_targets(
             targets=targets,
-            tools=args.tools,
+            tools=effective_tools,
             workers=args.workers,
             use_local_cli=use_local_cli,
             cli_script=CLI_SCRIPT,
         )
 
         run_duration_seconds = round(time.perf_counter() - run_start, 3)
-        summary = build_summary(entries)
+        summary = build_summary(entries, tools_arg=effective_tools)
         run_mode = "local_cli" if use_local_cli else "docker_cli"
         output_payload = {
             "generated_at_utc": run_started_utc.isoformat(),
@@ -129,7 +159,7 @@ def main() -> None:
             "count_scanned": len(targets),
             "count_scanned_vulnerable": selected_vulnerable_count,
             "count_scanned_clean": selected_clean_count,
-            "tools": args.tools,
+            "tools": effective_tools,
             "seed": args.seed,
             "workers": args.workers,
             "duration_seconds": run_duration_seconds,
@@ -143,7 +173,7 @@ def main() -> None:
             run_duration_seconds=run_duration_seconds,
             output_path=output_path,
             run_mode=run_mode,
-            tools=args.tools,
+            tools=effective_tools,
             seed=args.seed,
             workers=args.workers,
             count_requested=args.count,
