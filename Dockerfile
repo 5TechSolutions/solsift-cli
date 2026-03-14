@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -14,8 +14,9 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entire project (including app module for imports)
-COPY . .
+# Copy only runtime files needed by CLI
+COPY cli.py ./cli.py
+COPY solsift ./solsift
 
 # Make CLI executable
 RUN chmod +x cli.py solsift
@@ -24,5 +25,5 @@ RUN chmod +x cli.py solsift
 ENV API_BASE_URL="http://api:8000"
 
 # Default command
-ENTRYPOINT ["python3.11", "cli.py"]
+ENTRYPOINT ["python3.14", "cli.py"]
 CMD ["--help"]

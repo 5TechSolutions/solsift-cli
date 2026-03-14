@@ -9,16 +9,94 @@ Command-line interface for smart contract security auditing powered by SolSift A
 - Docker
 - solsift-api running and accessible
 
-## Usage
+## Run Modes
 
-Make sure the solsift-api is running first:
+Make sure `solsift-api` is running before any command.
+Image runtime is Python 3.14 (`python:3.14-slim`).
 
-```bash
-docker run -v /Users/patryk/Desktop/solsift-cli/test_contracts:/app/test_contracts \
-  --network solsift-api_solsift-network \
-  -e API_BASE_URL=http://api:8000 \
-  solsift-cli ./test_contracts/BadSmartContract.sol
+### 1. CLI locally
+
+```powershell
+$env:API_BASE_URL="http://localhost:8000"
+python .\cli.py .\test_contracts\BadSmartContract.sol -v -t slither
 ```
+
+### 2. CLI in Docker
+
+Build:
+
+```powershell
+docker build -t solsift-cli -f Dockerfile .
+```
+
+Run:
+
+```powershell
+docker run --rm `
+  -v "${PWD}\test_contracts:/app/test_contracts:ro" `
+  --network solsift-api_solsift-network `
+  -e API_BASE_URL=http://api:8000 `
+  solsift-cli ./test_contracts/BadSmartContract.sol -v -t slither
+```
+
+### 3. Tests locally (runner on host, CLI always in Docker)
+
+```powershell
+$env:DOCKER_NETWORK="solsift-api_solsift-network"
+$env:API_BASE_URL="http://api:8000"
+$env:SOLSIFT_DEFAULT_VULNERABLE_DIR="C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing\Vulnerable_SourceCodes"
+$env:SOLSIFT_DEFAULT_CLEAN_DIR="C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing\Secure_SourceCodes"
+
+python .\test_contracts\app\test_smart_contracts.py `
+  --tools slither,mythril `
+  --seed 42 `
+  --workers 4 `
+  --count 200
+```
+
+### 4. Tests in Docker (runner inside container)
+
+Build:
+
+```powershell
+docker build -t solsift-tester `
+  -f Dockerfile.tester `
+  .
+```
+
+This image downloads `bcccdatasets/bccc-vulscs-2023` during build and stores it under
+`/app/datasets/bccc-vulscs-2023`.
+
+Run:
+
+```powershell
+$results = "${PWD}\test_contracts\results"
+
+docker run --rm `
+  -v "${results}:/app/test_contracts/results" `
+  --network solsift-api_solsift-network `
+  -e API_BASE_URL=http://api:8000 `
+  solsift-tester `
+  --tools slither,mythril `
+  --seed 42 `
+  --workers 4 `
+  --count 200
+```
+
+In this mode, the runner uses local `cli.py` inside the tester container (no nested `docker run`).
+Dataset paths come from env vars that the image sets by default:
+
+- `/app/datasets/bccc-vulscs-2023/Vulnerable_SourceCodes`
+- `/app/datasets/bccc-vulscs-2023/Secure_SourceCodes`
+
+Results:
+- single JSON file: `test_contracts/results/audit_results_YYYYMMDD_HHMMSS.json`
+- contains run parameters, summary, and per-file results (including detecting tools)
+
+## Dataset Source
+
+The larger dataset used for running batch audits with the test app comes from Kaggle:
+https://www.kaggle.com/datasets/bcccdatasets/bccc-vulscs-2023
 
 ## Test Contracts
 
@@ -40,4 +118,9 @@ export API_BASE_URL=http://localhost:8000
 
 Default: `http://api:8000` (when running with docker-compose)
 
+If your Dockerized CLI must join a specific network, set `DOCKER_NETWORK`, e.g.:
+`DOCKER_NETWORK=solsift-api_solsift-network`
+
 Ensure the API service is running before using the CLI.
+
+`-t/--tools` is forwarded to API as `tools` in submit payload, so per-run tool selection overrides API `.env` defaults.

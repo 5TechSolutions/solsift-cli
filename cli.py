@@ -1,7 +1,7 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3.14
 """
 SolSift CLI - Command-line interface for smart contract auditing
-Usage: python3.11 cli.py <path-to-file-or-folder> [options]
+Usage: python3.14 cli.py <path-to-file-or-folder> [options]
 """
 
 import argparse
@@ -140,6 +140,16 @@ def format_results(job_id: str, file_path: str) -> Dict:
         }
 
 
+def parse_tools_argument(tools_arg: str) -> List[str]:
+    """Parse and normalize tools argument into a unique ordered list"""
+    parsed_tools = []
+    for tool_name in tools_arg.split(","):
+        normalized = tool_name.strip().lower()
+        if normalized and normalized not in parsed_tools:
+            parsed_tools.append(normalized)
+    return parsed_tools
+
+
 def print_summary(results: List[Dict]) -> None:
     """Print summary of audit results"""
     print("\n" + "=" * 80)
@@ -153,7 +163,7 @@ def print_summary(results: List[Dict]) -> None:
     total_info = sum(r["info"] for r in results)
     total_vulns = sum(r["total"] for r in results)
 
-    print(f"📊 OVERALL STATISTICS")
+    print("📊 OVERALL STATISTICS")
     print(f"{'─' * 80}")
     print(f"  Total Files Analyzed:     {len(results)}")
     print(f"  Total Vulnerabilities:    {total_vulns}")
@@ -163,7 +173,7 @@ def print_summary(results: List[Dict]) -> None:
     print(f"    🟢 Low:                 {total_low}")
     print(f"    🔵 Info:                {total_info}\n")
 
-    print(f"📁 DETAILED RESULTS")
+    print("📁 DETAILED RESULTS")
     print(f"{'─' * 80}")
 
     for result in results:
@@ -186,7 +196,7 @@ def print_summary(results: List[Dict]) -> None:
         print(")")
 
         if result["vulnerabilities"]:
-            print(f"\n   Vulnerabilities:")
+            print("\n   Vulnerabilities:")
             for vuln in result["vulnerabilities"]:
                 severity_icon = {
                     "critical": "🔴",
@@ -212,9 +222,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3.11 cli.py ./contracts/MyContract.sol
-  python3.11 cli.py ./contracts --output json
-  python3.11 cli.py ./contracts --tools slither,mythril
+  python3.14 cli.py ./contracts/MyContract.sol
+  python3.14 cli.py ./contracts --output json
+  python3.14 cli.py ./contracts --tools slither,mythril
         """,
     )
 
@@ -242,14 +252,17 @@ Examples:
     try:
         # Find all Solidity files
         sol_files = find_solidity_files(args.path)
-        tools = [t.strip() for t in args.tools.split(",")]
+        tools = parse_tools_argument(args.tools)
+
+        if not tools:
+            raise ValueError("No valid tools provided. Use --tools, e.g. slither,mythril")
 
         if args.verbose:
             print(f"\n📄 Found {len(sol_files)} Solidity file(s)")
             for f in sol_files:
                 print(f"   • {f}")
             print(f"\n🔧 Using tools: {', '.join(tools)}")
-            print(f"⏳ Starting analysis...\n")
+            print("⏳ Starting analysis...\n")
 
         # Process each file
         results = []
@@ -265,7 +278,7 @@ Examples:
                 # Create audit job via API
                 response = requests.post(
                     f"{API_BASE_URL}/api/v1/audit/submit",
-                    json={"contract_code": code},
+                    json={"contract_code": code, "tools": tools},
                     timeout=10,
                 )
 

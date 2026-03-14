@@ -1,0 +1,43 @@
+FROM python:3.14-slim
+
+WORKDIR /app
+
+ARG KAGGLE_DATASET_URL="https://www.kaggle.com/api/v1/datasets/download/bcccdatasets/bccc-vulscs-2023"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy only tester runtime files
+COPY cli.py ./cli.py
+COPY test_contracts/app ./test_contracts/app
+
+# Ensure executables are runnable
+RUN chmod +x cli.py test_contracts/app/test_smart_contracts.py
+
+# Tester runtime config
+ENV API_BASE_URL="http://api:8000"
+ENV PYTHONUNBUFFERED="1"
+ENV SOLSIFT_BATCH_IN_CONTAINER="1"
+ENV SOLSIFT_DATASET_ROOT="/app/datasets/bccc-vulscs-2023"
+ENV SOLSIFT_DEFAULT_VULNERABLE_DIR="/app/datasets/bccc-vulscs-2023/Vulnerable_SourceCodes"
+ENV SOLSIFT_DEFAULT_CLEAN_DIR="/app/datasets/bccc-vulscs-2023/Secure_SourceCodes"
+
+# Download benchmark dataset into the image so runtime can use in-image defaults.
+RUN mkdir -p "${SOLSIFT_DATASET_ROOT}" /tmp/dataset \
+    && curl -fL "${KAGGLE_DATASET_URL}" -o /tmp/dataset/bccc-vulscs-2023.zip \
+    && unzip /tmp/dataset/bccc-vulscs-2023.zip -d "${SOLSIFT_DATASET_ROOT}" \
+    && rm -rf /tmp/dataset
+
+# Batch tester image entrypoint
+ENTRYPOINT ["python3.14", "-u", "test_contracts/app/test_smart_contracts.py"]
+CMD ["--help"]
