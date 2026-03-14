@@ -3,7 +3,8 @@
 Batch audit Solidity files from two folders.
 
 CLI execution mode:
-- always run CLI in Docker
+- by default, run the CLI inside Docker
+- when SOLSIFT_BATCH_IN_CONTAINER=1 is set, run the CLI locally instead of in Docker
 """
 
 from __future__ import annotations
@@ -199,8 +200,9 @@ def main() -> None:
             workers=args.workers,
             count_requested=args.count,
         )
-    except Exception as exc:
-        print(f"Error: {exc}", file=sys.stderr)
+    except Exception:
+        # Propagate the exception to be handled by the __main__ block,
+        # which is responsible for user-facing error reporting.
         raise
 
 
