@@ -44,10 +44,10 @@ docker run --rm `
 ```powershell
 $env:DOCKER_NETWORK="solsift-api_solsift-network"
 $env:API_BASE_URL="http://api:8000"
+$env:SOLSIFT_DEFAULT_VULNERABLE_DIR="C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing\Vulnerable_SourceCodes"
+$env:SOLSIFT_DEFAULT_CLEAN_DIR="C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing\Secure_SourceCodes"
 
 python .\test_contracts\app\test_smart_contracts.py `
-  --vulnerable-dir "C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing\Vulnerable_SourceCodes" `
-  --clean-dir "C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing\Secure_SourceCodes" `
   --tools slither,mythril `
   --seed 42 `
   --workers 4 `
@@ -59,24 +59,24 @@ python .\test_contracts\app\test_smart_contracts.py `
 Build:
 
 ```powershell
-docker build -t solsift-tester -f Dockerfile.tester .
+docker build -t solsift-tester `
+  -f Dockerfile.tester `
+  .
 ```
+
+This image downloads `bcccdatasets/bccc-vulscs-2023` during build and stores it under
+`/app/datasets/bccc-vulscs-2023`.
 
 Run:
 
 ```powershell
-$base = "C:\Users\jakub\Desktop\5TS\Repos\SmartContractAuditing"
 $results = "${PWD}\test_contracts\results"
 
 docker run --rm `
-  -v "${base}\Vulnerable_SourceCodes:/data/vulnerable:ro" `
-  -v "${base}\Secure_SourceCodes:/data/clean:ro" `
   -v "${results}:/app/test_contracts/results" `
   --network solsift-api_solsift-network `
   -e API_BASE_URL=http://api:8000 `
   solsift-tester `
-  --vulnerable-dir /data/vulnerable `
-  --clean-dir /data/clean `
   --tools slither,mythril `
   --seed 42 `
   --workers 4 `
@@ -84,6 +84,10 @@ docker run --rm `
 ```
 
 In this mode, the runner uses local `cli.py` inside the tester container (no nested `docker run`).
+Dataset paths come from env vars that the image sets by default:
+
+- `/app/datasets/bccc-vulscs-2023/Vulnerable_SourceCodes`
+- `/app/datasets/bccc-vulscs-2023/Secure_SourceCodes`
 
 Results:
 - single JSON file: `test_contracts/results/audit_results_YYYYMMDD_HHMMSS.json`

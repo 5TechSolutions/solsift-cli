@@ -8,16 +8,6 @@ def parse_args() -> argparse.Namespace:
         description="Audit .sol files from vulnerable/clean folders."
     )
     parser.add_argument(
-        "--vulnerable-dir",
-        required=True,
-        help="Directory with contracts expected to be vulnerable",
-    )
-    parser.add_argument(
-        "--clean-dir",
-        required=True,
-        help="Directory with contracts expected to be clean",
-    )
-    parser.add_argument(
         "--tools",
         default=None,
         help="Comma-separated tools passed to CLI via -t (optional)",

@@ -26,6 +26,27 @@ RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULT_FILE_PREFIX = "audit_results"
 CLI_SCRIPT = Path(__file__).resolve().parents[2] / "cli.py"
 DEFAULT_CLI_TOOLS = "slither,mythril"
+VULNERABLE_DIR_ENV = "SOLSIFT_DEFAULT_VULNERABLE_DIR"
+CLEAN_DIR_ENV = "SOLSIFT_DEFAULT_CLEAN_DIR"
+
+
+def configure_console_streams() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(line_buffering=True)
+
+
+def resolve_dataset_dirs() -> tuple[Path, Path]:
+    vulnerable_dir = os.environ.get(VULNERABLE_DIR_ENV)
+    clean_dir = os.environ.get(CLEAN_DIR_ENV)
+
+    if not vulnerable_dir:
+        raise ValueError(f"Missing required environment variable: {VULNERABLE_DIR_ENV}")
+    if not clean_dir:
+        raise ValueError(f"Missing required environment variable: {CLEAN_DIR_ENV}")
+
+    return Path(vulnerable_dir), Path(clean_dir)
 
 
 def print_console_summary(
@@ -86,6 +107,7 @@ def print_console_summary(
 
 
 def main() -> None:
+    configure_console_streams()
     args = parse_args()
     rng = random.Random(args.seed)
     use_local_cli = os.environ.get("SOLSIFT_BATCH_IN_CONTAINER") == "1"
@@ -95,8 +117,7 @@ def main() -> None:
     output_path = build_output_path(RESULTS_DIR, RESULT_FILE_PREFIX, run_timestamp)
 
     try:
-        vulnerable_dir = Path(args.vulnerable_dir)
-        clean_dir = Path(args.clean_dir)
+        vulnerable_dir, clean_dir = resolve_dataset_dirs()
 
         if not vulnerable_dir.exists():
             raise FileNotFoundError(f"Vulnerable directory does not exist: {vulnerable_dir}")
